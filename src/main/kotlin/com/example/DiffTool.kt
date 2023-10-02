@@ -34,8 +34,8 @@ class DiffTool {
                         diffs.addAll(
                             listDiff(
                                 fieldPath,
-                                previousValue as List<Any>,
-                                currentValue as List<Any>
+                                previousValue,
+                                currentValue
                             )
                         )
                     }
@@ -57,18 +57,18 @@ class DiffTool {
     }
 
     // For lists we can use this to determine additions and removals.
-    private fun <T : Any> listDiff(path: String, previous: List<T>, current: List<T>): List<ChangeType> {
+    private fun listDiff(path: String, previous: List<*>, current: List<*>): List<ChangeType> {
         val diffs: MutableList<ChangeType> = ArrayList()
 
         // Take care of the simple types first
         val previousSet = previous.toSet()
         val currentSet = current.toSet()
         val (added, updated) = currentSet.minus(previousSet).partition {
-            val item = it::class.java
+            val item = it!!::class.java
             item.isSimpleType() || !isInBothSets(previousSet, currentSet, it)
         }
         val (removed, _) = previousSet.minus(currentSet).partition {
-            val item = it::class.java
+            val item = it!!::class.java
             item.isSimpleType() || !isInBothSets(previousSet, currentSet, it)
         }
         if (added.isNotEmpty() || removed.isNotEmpty())
@@ -77,7 +77,7 @@ class DiffTool {
         // Now we can take care of the complex types that were updated
         updated.map {
             val idFieldName = idFieldName(it)
-            val aField = it::class.java.getDeclaredFieldAccessible(idFieldName)
+            val aField = it!!::class.java.getDeclaredFieldAccessible(idFieldName)
             val listObjectPath = aField[it]
             val previousItem = findObjectInList(previous, idFieldName, it)
             val fieldPath = if (path.isEmpty()) "[$listObjectPath]" else "$path[$listObjectPath]"
